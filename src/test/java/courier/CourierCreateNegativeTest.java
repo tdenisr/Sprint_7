@@ -8,6 +8,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import models.Courier;
 import org.apache.http.HttpStatus;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,6 +19,7 @@ import static utils.Utils.randomString;
 public class CourierCreateNegativeTest {
     private static String BASE_URI = "http://qa-scooter.praktikum-services.ru/";
     private final CourierClient courierClient = new CourierClient();
+    Courier courier =  CourierGenerator.randomCourier();
     @Before
     public void setup(){
         RestAssured.baseURI = BASE_URI;
@@ -25,7 +27,6 @@ public class CourierCreateNegativeTest {
     @Test
     @DisplayName("Проверка, что нельзя создать одинаковых курьеров")
     public void createSameCourierReturnConflictTest(){
-        Courier courier =  CourierGenerator.randomCourier();
         Courier sameCourier = new Courier()
                 .withLogin(courier.getLogin())
                 .withPassword(randomString(8))
@@ -38,7 +39,6 @@ public class CourierCreateNegativeTest {
                 .statusCode(HttpStatus.SC_CONFLICT)
                 .and()
                 .body("message", equalTo("Этот логин уже используется. Попробуйте другой."));
-        courierClient.deleteCourier(courier);
     }
     @Test
     @DisplayName("Создание курьера без логина")
@@ -56,14 +56,20 @@ public class CourierCreateNegativeTest {
     @Test
     @DisplayName("Создание курьера без пароля")
     public void noPassReturnBadRequest(){
-        Courier courierNoLogin = new Courier()
+        Courier courierNoPass = new Courier()
                 .withLogin(randomString(20))
                 .withFirstName(randomString(10));
-        Response noPassResponse = courierClient.create(courierNoLogin);
+        Response noPassResponse = courierClient.create(courierNoPass);
         noPassResponse
                 .then()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .and()
                 .body("message", equalTo("Недостаточно данных для создания учетной записи"));
+    }
+    @After
+    public void tearDown(){
+         if(courierClient.getCourierId(courier) != null) {
+            courierClient.deleteCourier(courier);
+        }
     }
 }

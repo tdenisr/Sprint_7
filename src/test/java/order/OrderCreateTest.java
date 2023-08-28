@@ -14,15 +14,17 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 @RunWith(Parameterized.class)
-public class OrderCreateTest{
+public class OrderCreateTest {
     private final static String BASE_URI = "http://qa-scooter.praktikum-services.ru/";
     OrderClient orderClient = new OrderClient();
     Order order = OrderGenerator.createRanndomOrder();
-    private String[] color;
-    public OrderCreateTest(String[] color){
+    private final String[] color;
+
+    public OrderCreateTest(String[] color) {
         this.color = color;
     }
-    @Parameterized.Parameters (name = "Предпочитаемые цвета")
+
+    @Parameterized.Parameters(name = "Предпочитаемые цвета")
     public static Object[][] getColor() {
         return new Object[][]{
                 {new String[]{"BLACK"}},
@@ -34,22 +36,25 @@ public class OrderCreateTest{
 
 
     @Before
-    public void setup(){
+    public void setup() {
         RestAssured.baseURI = BASE_URI;
     }
+
     @Test
     @DisplayName("Создание заказов с разными предпочитаемыми цветами")
-    public void createOrder(){
+    public void createOrder() {
         order.setColor(color);
         Response response = orderClient.create(order);
         int orderTrack = response.path("track");
         response.then()
-                .assertThat().body("track", notNullValue())
+                .statusCode(HttpStatus.SC_CREATED)
                 .and()
-                .statusCode(HttpStatus.SC_CREATED);
+                .assertThat().body("track", notNullValue());
         Response cancelResponse = orderClient.cancel(orderTrack);
-        cancelResponse.then().statusCode(HttpStatus.SC_OK)
-                .and().body("ok", equalTo(true));
+        cancelResponse.then()
+                .statusCode(HttpStatus.SC_OK)
+                .and()
+                .body("ok", equalTo(true));
 
     }
 
